@@ -17,16 +17,17 @@ if st.button("Find Internships"):
         jobs = search_internships(query)
 
     if not jobs:
-        st.error("No internships found. Try a more specific query.")
+        st.error("No high-quality internships found. Try another query.")
     else:
         with st.spinner("🤖 Evaluating with AI..."):
             jobs = judge_internships(jobs)
 
         for job in jobs:
             st.subheader(job.get("title", "No Title"))
-            st.write(job.get("url", ""))
 
-            st.markdown("### 🤖 LLM-as-a-Judge")
-            st.info(job.get("llm_judge", "No evaluation available"))
+            st.markdown(f"[🔗 Apply Here]({job.get('url', '')})")
+
+            st.markdown("### 🤖 AI Evaluation")
+            st.info(job.get("llm_judge", "No evaluation"))
 
             st.markdown("---")
