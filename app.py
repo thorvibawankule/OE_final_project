@@ -9,20 +9,24 @@ query = st.text_input("Enter field (AI, ML, Data Science)")
 
 if st.button("Find Internships"):
 
+    if not query.strip():
+        st.warning("Please enter a search query")
+        st.stop()
+
     with st.spinner("🔍 Searching internships..."):
         jobs = search_internships(query)
 
     if not jobs:
-        st.error("No internships found.")
+        st.error("No internships found. Try a more specific query.")
     else:
         with st.spinner("🤖 Evaluating with AI..."):
             jobs = judge_internships(jobs)
 
         for job in jobs:
-            st.subheader(job["title"])
-            st.write(job["url"])
+            st.subheader(job.get("title", "No Title"))
+            st.write(job.get("url", ""))
 
             st.markdown("### 🤖 LLM-as-a-Judge")
-            st.info(job["llm_judge"])
+            st.info(job.get("llm_judge", "No evaluation available"))
 
             st.markdown("---")
