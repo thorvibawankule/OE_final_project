@@ -1,33 +1,42 @@
-import streamlit as st
-from agent import search_internships, judge_internships
+import requests
 
-st.set_page_config(page_title="AI Internship Finder")
+# Dummy search (replace with API later if needed)
+def search_internships(query):
+    try:
+        # TEMP MOCK DATA (safe fallback)
+        return [
+            {
+                "title": "Data Science Intern - Remote",
+                "content": "Work with ML models, Python, and analytics.",
+                "url": "https://example.com/job1",
+            },
+            {
+                "title": "AI/ML Intern",
+                "content": "Build AI systems and analyze data.",
+                "url": "https://example.com/job2",
+            },
+        ]
+    except Exception as e:
+        print("Search error:", e)
+        return []
 
-st.title("🚀 AI Internship Opportunity Finder")
 
-query = st.text_input("Enter field (AI, ML, Data Science)")
+def judge_internships(results):
+    scored = []
 
-if st.button("Find Internships"):
+    for job in results:
+        score = 7
 
-    if not query.strip():
-        st.warning("Please enter a search query")
-        st.stop()
+        text = (job["title"] + job["content"]).lower()
 
-    with st.spinner("🔍 Searching internships..."):
-        jobs = search_internships(query)
+        if "python" in text:
+            score += 1
+        if "machine learning" in text or "ml" in text:
+            score += 1
+        if "remote" in text:
+            score += 1
 
-    if not jobs:
-        st.error("No high-quality internships found. Try another query.")
-    else:
-        with st.spinner("🤖 Evaluating with AI..."):
-            jobs = judge_internships(jobs)
+        job["score"] = min(score, 10)
+        scored.append(job)
 
-        for job in jobs:
-            st.subheader(job.get("title", "No Title"))
-
-            st.markdown(f"[🔗 Apply Here]({job.get('url', '')})")
-
-            st.markdown("### 🤖 AI Evaluation")
-            st.info(job.get("llm_judge", "No evaluation"))
-
-            st.markdown("---")
+    return scored
