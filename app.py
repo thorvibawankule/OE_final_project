@@ -1,42 +1,54 @@
-import requests
+import streamlit as st
+from agent import search_internships, judge_internships
 
-# Dummy search (replace with API later if needed)
-def search_internships(query):
-    try:
-        # TEMP MOCK DATA (safe fallback)
-        return [
-            {
-                "title": "Data Science Intern - Remote",
-                "content": "Work with ML models, Python, and analytics.",
-                "url": "https://example.com/job1",
-            },
-            {
-                "title": "AI/ML Intern",
-                "content": "Build AI systems and analyze data.",
-                "url": "https://example.com/job2",
-            },
-        ]
-    except Exception as e:
-        print("Search error:", e)
-        return []
+# Page config
+st.set_page_config(
+    page_title="AI Internship Finder",
+    page_icon="🚀",
+    layout="wide"
+)
 
+# Title
+st.title("🚀 AI Internship Opportunity Finder")
 
-def judge_internships(results):
-    scored = []
+# Input
+field = st.text_input("Enter field (AI, ML, Data Science)", placeholder="e.g. data science")
 
-    for job in results:
-        score = 7
+# Button
+if st.button("Search Internships"):
 
-        text = (job["title"] + job["content"]).lower()
+    if not field.strip():
+        st.warning("⚠️ Please enter a field")
+    else:
+        st.success(f"🔍 Searching internships for: {field}")
 
-        if "python" in text:
-            score += 1
-        if "machine learning" in text or "ml" in text:
-            score += 1
-        if "remote" in text:
-            score += 1
+        # ✅ SAFE QUERY (fixes your previous crash)
+        query = f"{field} internship AI ML remote"
 
-        job["score"] = min(score, 10)
-        scored.append(job)
+        try:
+            # Step 1: Search
+            results = search_internships(query)
 
-    return scored
+            if not results:
+                st.error("❌ No results found")
+            else:
+                # Step 2: Judge / Score
+                scored_results = judge_internships(results)
+
+                st.subheader("📊 Results")
+
+                for i, job in enumerate(scored_results, 1):
+                    with st.container():
+                        st.markdown(f"### {i}. {job.get('title', 'No Title')}")
+
+                        st.write(job.get("content", "No description available"))
+
+                        st.markdown(f"⭐ **Score:** {job.get('score', 0)}/10")
+
+                        st.markdown(f"🔗 [Apply Here]({job.get('url', '#')})")
+
+                        st.markdown("---")
+
+        except Exception as e:
+            st.error("🚨 Something went wrong")
+            st.code(str(e))
