@@ -1,9 +1,6 @@
 import requests
 import os
 import random
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # 🔹 SEARCH INTERNSHIPS
 def search_internships(query):
