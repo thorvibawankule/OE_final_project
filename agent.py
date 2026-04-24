@@ -13,7 +13,7 @@ def search_internships(query):
     url = "https://api.tavily.com/search"
 
     # ✅ BETTER QUERY (real job links, not listing sites)
-    query = f"{query} AI internship apply site:linkedin.com/jobs OR site:wellfound.com OR site:jobs.lever.co"
+    query = f"{query} AI internship apply (site:lever.co OR site:wellfound.com)"
 
     payload = {
         "api_key": api_key,
