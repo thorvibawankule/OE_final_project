@@ -1,27 +1,25 @@
 import requests
 import os
-import random
 import streamlit as st
-
 
 # 🔹 SEARCH INTERNSHIPS
 def search_internships(query):
     api_key = os.getenv("TAVILY_API_KEY")
 
     if not api_key:
-        st.error("❌ Missing TAVILY_API_KEY in Streamlit Secrets")
+        st.error("❌ Missing TAVILY_API_KEY in Secrets")
         return []
 
     url = "https://api.tavily.com/search"
 
-    # 🔥 Improve search query
-    query = f"{query} internships AI ML jobs remote"
+    # ✅ BETTER QUERY (real job links, not listing sites)
+    query = f"{query} AI internship apply site:linkedin.com/jobs OR site:wellfound.com OR site:jobs.lever.co"
 
     payload = {
         "api_key": api_key,
         "query": query,
         "search_depth": "advanced",
-        "max_results": 5
+        "max_results": 10
     }
 
     try:
@@ -34,7 +32,7 @@ def search_internships(query):
 
         data = response.json()
 
-        # 🔍 DEBUG (remove later if you want)
+        # 🔍 DEBUG (optional)
         st.write("DEBUG RESPONSE:", data)
 
     except Exception as e:
@@ -44,7 +42,7 @@ def search_internships(query):
     results = data.get("results", [])
 
     if not results:
-        st.warning("No results returned from API")
+        st.warning("No results returned")
         return []
 
     cleaned = []
@@ -55,7 +53,20 @@ def search_internships(query):
             "content": item.get("content", "")[:300]
         })
 
-    return cleaned
+    # ❌ FILTER OUT JUNK SITES
+    filtered = []
+    for job in cleaned:
+        url = job["url"]
+
+        if any(x in url for x in ["glassdoor", "indeed", "remotive"]):
+            continue
+
+        if len(job["content"]) < 100:
+            continue
+
+        filtered.append(job)
+
+    return filtered
 
 
 # 🔹 LLM JUDGE
@@ -77,19 +88,14 @@ def judge_internships(jobs):
     for job in jobs:
 
         prompt = f"""
-You are a strict evaluator of AI internships.
+Evaluate this SINGLE internship.
 
-Give:
-1. Score (0-10)
-2. Reason (2 lines)
+Return ONLY:
+Score: X/10
+Reason: 1-2 lines
 
-IMPORTANT:
-- Use different scores for each job
-- Use range between 5 to 10
-- Be realistic
-
-Title: {job.get('title', '')}
-Description: {job.get('content', '')}
+Title: {job.get('title')}
+Description: {job.get('content')[:300]}
 """
 
         payload = {
@@ -110,15 +116,10 @@ Description: {job.get('content', '')}
 
             result = res.json()
 
-            if "choices" in result:
-                output = result["choices"][0]["message"]["content"]
-            else:
-                raise Exception("Invalid LLM response")
+            output = result["choices"][0]["message"]["content"]
 
         except Exception as e:
-            # fallback (still useful but not hiding error)
-            score = random.randint(6, 9)
-            output = f"Score: {score}\nReason: Fallback due to error: {str(e)}"
+            output = f"❌ LLM Error: {str(e)}"
 
         job["llm_judge"] = output
         judged.append(job)
