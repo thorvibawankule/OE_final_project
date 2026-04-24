@@ -55,19 +55,26 @@ def search_internships(query):
 
     # ❌ FILTER OUT JUNK SITES
     filtered = []
-    for job in cleaned:
-        url = job["url"]
 
-        if any(x in url for x in ["glassdoor", "indeed", "remotive"]):
-            continue
+for job in cleaned:
+    url = job["url"]
 
-        if len(job["content"]) < 100:
-            continue
+    # ❌ Remove junk listing sites
+    if any(x in url for x in [
+        "glassdoor",
+        "indeed",
+        "remotive",
+        "linkedin.com/jobs"
+    ]):
+        continue
 
-        filtered.append(job)
+    # ❌ Remove weak content
+    if len(job["content"]) < 120:
+        continue
 
-    return filtered
+    filtered.append(job)
 
+return filtered
 
 # 🔹 LLM JUDGE
 def judge_internships(jobs):
