@@ -1,40 +1,71 @@
 import requests
 import os
 import random
+import streamlit as st
+
 
 # 🔹 SEARCH INTERNSHIPS
 def search_internships(query):
     api_key = os.getenv("TAVILY_API_KEY")
 
+    if not api_key:
+        st.error("❌ Missing TAVILY_API_KEY in Streamlit Secrets")
+        return []
+
     url = "https://api.tavily.com/search"
+
+    # 🔥 Improve search query
+    query = f"{query} internships AI ML jobs remote"
 
     payload = {
         "api_key": api_key,
         "query": query,
-        "search_depth": "basic",
+        "search_depth": "advanced",
         "max_results": 5
     }
 
     try:
         response = requests.post(url, json=payload, timeout=20)
-        data = response.json()
-    except Exception as e:
-        return [{"title": "Error fetching data", "url": "", "content": str(e)}]
 
-    results = []
-    for item in data.get("results", []):
-        results.append({
-            "title": item.get("title"),
-            "url": item.get("url"),
-            "content": item.get("content", "")[:500]
+        if response.status_code != 200:
+            st.error(f"API Error: {response.status_code}")
+            st.write(response.text)
+            return []
+
+        data = response.json()
+
+        # 🔍 DEBUG (remove later if you want)
+        st.write("DEBUG RESPONSE:", data)
+
+    except Exception as e:
+        st.error(f"Request failed: {e}")
+        return []
+
+    results = data.get("results", [])
+
+    if not results:
+        st.warning("No results returned from API")
+        return []
+
+    cleaned = []
+    for item in results:
+        cleaned.append({
+            "title": item.get("title", "No Title"),
+            "url": item.get("url", ""),
+            "content": item.get("content", "")[:300]
         })
 
-    return results
+    return cleaned
 
 
-# 🔹 LLM JUDGE (FINAL VERSION)
+# 🔹 LLM JUDGE
 def judge_internships(jobs):
     api_key = os.getenv("OPENROUTER_API_KEY")
+
+    if not api_key:
+        for job in jobs:
+            job["llm_judge"] = "❌ Missing OPENROUTER_API_KEY"
+        return jobs
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -57,8 +88,8 @@ IMPORTANT:
 - Use range between 5 to 10
 - Be realistic
 
-Title: {job['title']}
-Description: {job['content']}
+Title: {job.get('title', '')}
+Description: {job.get('content', '')}
 """
 
         payload = {
@@ -74,26 +105,20 @@ Description: {job['content']}
                 timeout=20
             )
 
+            if res.status_code != 200:
+                raise Exception(f"API error {res.status_code}")
+
             result = res.json()
 
             if "choices" in result:
                 output = result["choices"][0]["message"]["content"]
             else:
-                raise Exception("LLM failed")
+                raise Exception("Invalid LLM response")
 
-        except:
-            # ✅ SMART FALLBACK (REALISTIC, NOT OBVIOUS)
+        except Exception as e:
+            # fallback (still useful but not hiding error)
             score = random.randint(6, 9)
-
-            reasons = [
-                "Good exposure to AI tools and practical learning.",
-                "Relevant skills for AI/ML domain development.",
-                "Decent opportunity with real-world applications.",
-                "Strong alignment with industry AI requirements.",
-                "Useful experience for beginners in AI."
-            ]
-
-            output = f"Score: {score}\nReason: {random.choice(reasons)}"
+            output = f"Score: {score}\nReason: Fallback due to error: {str(e)}"
 
         job["llm_judge"] = output
         judged.append(job)
