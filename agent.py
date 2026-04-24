@@ -7,12 +7,12 @@ def search_internships(query):
     api_key = os.getenv("TAVILY_API_KEY")
 
     if not api_key:
-        st.error("❌ Missing TAVILY_API_KEY in Secrets")
+        st.error("❌ Missing TAVILY_API_KEY")
         return []
 
     url = "https://api.tavily.com/search"
 
-    # ✅ BETTER QUERY (real job links, not listing sites)
+    # ✅ CLEAN QUERY
     query = f"{query} AI internship apply (site:lever.co OR site:wellfound.com)"
 
     payload = {
@@ -32,7 +32,6 @@ def search_internships(query):
 
         data = response.json()
 
-        # 🔍 DEBUG (optional)
         st.write("DEBUG RESPONSE:", data)
 
     except Exception as e:
@@ -40,10 +39,6 @@ def search_internships(query):
         return []
 
     results = data.get("results", [])
-
-    if not results:
-        st.warning("No results returned")
-        return []
 
     cleaned = []
     for item in results:
@@ -53,28 +48,27 @@ def search_internships(query):
             "content": item.get("content", "")[:300]
         })
 
-    # ❌ FILTER OUT JUNK SITES
+    # ✅ FILTER
     filtered = []
+    for job in cleaned:
+        url = job["url"]
 
-for job in cleaned:
-    url = job["url"]
+        if (
+            "glassdoor" in url or
+            "indeed" in url or
+            "remotive" in url or
+            "linkedin.com/jobs" in url
+        ):
+            continue
 
-    # ❌ Remove junk listing sites
-    if any(x in url for x in [
-        "glassdoor",
-        "indeed",
-        "remotive",
-        "linkedin.com/jobs"
-    ]):
-        continue
+        if len(job["content"]) < 120:
+            continue
 
-    # ❌ Remove weak content
-    if len(job["content"]) < 120:
-        continue
+        filtered.append(job)
 
-    filtered.append(job)
+    return filtered
 
-return filtered
+
 # 🔹 LLM JUDGE
 def judge_internships(jobs):
     api_key = os.getenv("OPENROUTER_API_KEY")
@@ -121,7 +115,6 @@ Description: {job.get('content')[:300]}
                 raise Exception(f"API error {res.status_code}")
 
             result = res.json()
-
             output = result["choices"][0]["message"]["content"]
 
         except Exception as e:
