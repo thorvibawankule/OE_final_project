@@ -1,3 +1,18 @@
+def search_internships(query):
+    return [
+        {
+            "title": "Data Science Intern - Remote",
+            "content": "Work with Python, ML models, and analytics.",
+            "url": "https://example.com/job1",
+        },
+        {
+            "title": "AI/ML Intern",
+            "content": "Build machine learning systems and analyze data.",
+            "url": "https://example.com/job2",
+        },
+    ]
+
+
 def judge_internships(results):
     scored = []
 
